@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String            @id @default(uuid())
+  email       String            @unique
+  name        String?
+  password    String            // hashed
+  createdAt   DateTime          @default(now())
+  transcripts Transcript[]
+  dictionaries DictionaryEntry[]
+}
+
+model Transcript {
+  id          String           @id @default(uuid())
+  userId      String
+  text        String           @default("")
+  status      String           @default("processing") // processing | partial | done | failed
+  /// Total recording duration in whole seconds for this transcript.
+  durationSeconds Int?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  slices      TranscriptSlice[]
+  user        User             @relation(fields: [userId], references: [id])
+}
+
+model TranscriptSlice {
+  id           String     @id
+  transcriptId String
+  chunkIndex   Int
+  audioUrl     String
+  text         String?
+  status       String     @default("pending") // pending/processing/done/failed
+  createdAt    DateTime   @default(now())
+  transcript   Transcript @relation(fields: [transcriptId], references: [id])
+
+  @@unique([transcriptId, chunkIndex])
+}
+
+model DictionaryEntry {
+  id          String   @id @default(uuid())
+  userId      String
+  phrase      String
+  replacement String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+
